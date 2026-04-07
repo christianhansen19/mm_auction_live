@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MM Auction Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#080a0d;--surface:#0f1318;--card:#161b23;--border:#222830;
+  --orange:#f97316;--green:#22c55e;--red:#ef4444;--blue:#60a5fa;
+  --gold:#fbbf24;--purple:#a78bfa;--pink:#f472b6;--cyan:#22d3ee;
+  --muted:#5a6575;--text:#e2e8f0;--text-dim:#8896a8;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:13px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--orange);}
+.header-right{display:flex;align-items:center;gap:10px;}
+.badge{font-size:11px;padding:4px 12px;border-radius:5px;font-weight:600;letter-spacing:.5px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:var(--green);}
+
+.tabs{display:flex;gap:4px;padding:9px 20px;border-bottom:1px solid var(--border);}
+.tab{padding:6px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all .15s;}
+.tab:hover{color:var(--text);}
+.tab.active{background:var(--card);color:var(--text);border:1px solid var(--border);}
+
+.page{display:none;padding:16px 20px;}
+.page.active{display:block;}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--muted);margin-bottom:12px;}
+
+/* ── STANDINGS ── */
+.standings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:20px;}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:13px 15px;position:relative;overflow:hidden;}
+.scard.rank1{border-color:rgba(251,191,36,.4);box-shadow:0 0 20px rgba(251,191,36,.06);}
+.scard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.scard.Porter::before{background:var(--orange);}.scard.Chris::before{background:var(--blue);}
+.scard.Mush::before{background:var(--green);}.scard.Jandy::before{background:var(--purple);}
+.scard.Slade::before{background:var(--pink);}.scard.Corr::before{background:var(--cyan);}
+.scard-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
+.scard-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;}
+.scard.Porter .scard-name{color:var(--orange);}.scard.Chris .scard-name{color:var(--blue);}
+.scard.Mush .scard-name{color:var(--green);}.scard.Jandy .scard-name{color:var(--purple);}
+.scard.Slade .scard-name{color:var(--pink);}.scard.Corr .scard-name{color:var(--cyan);}
+.scard-score{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;}
+.scard.rank1 .scard-score{color:var(--gold);}
+.scard-meta{font-size:11px;color:var(--muted);margin-bottom:8px;font-family:'DM Mono',monospace;}
+.alive-c{color:var(--green);}.dead-c{color:var(--red);}
+.bar-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s;}
+.Porter .bar-fill{background:var(--orange);}.Chris .bar-fill{background:var(--blue);}
+.Mush .bar-fill{background:var(--green);}.Jandy .bar-fill{background:var(--purple);}
+.Slade .bar-fill{background:var(--pink);}.Corr .bar-fill{background:var(--cyan);}
+
+/* ── ROSTERS ── */
+.roster-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+.roster-block{}
+.rh{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;}
+.rh.Porter{background:rgba(249,115,22,.08);border-color:rgba(249,115,22,.3);}
+.rh.Chris{background:rgba(96,165,250,.08);border-color:rgba(96,165,250,.3);}
+.rh.Mush{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);}
+.rh.Jandy{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.3);}
+.rh.Slade{background:rgba(244,114,182,.08);border-color:rgba(244,114,182,.3);}
+.rh.Corr{background:rgba(34,211,238,.08);border-color:rgba(34,211,238,.3);}
+.rh-name{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;}
+.rh.Porter .rh-name{color:var(--orange);}.rh.Chris .rh-name{color:var(--blue);}
+.rh.Mush .rh-name{color:var(--green);}.rh.Jandy .rh-name{color:var(--purple);}
+.rh.Slade .rh-name{color:var(--pink);}.rh.Corr .rh-name{color:var(--cyan);}
+.rh-stats{display:flex;gap:14px;}
+.rhstat .lbl{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+.rhstat .val{font-family:'Bebas Neue',sans-serif;font-size:19px;line-height:1.1;}
+.rhstat .val.gold{color:var(--gold);}
+.rtable{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:0 0 8px 8px;overflow:hidden;}
+.rtable th{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:6px 11px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface);}
+.rtable th.r{text-align:right;}
+.rtable td{padding:7px 11px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.rtable tr:last-child td{border-bottom:none;}
+.rtable tr.elim td{opacity:.4;}
+.rtable tr.elim .tname{text-decoration:line-through;text-decoration-color:var(--red);}
+.rtable tr:hover td{background:rgba(255,255,255,.02);}
+.rtable tfoot td{background:var(--surface);font-weight:700;border-top:2px solid var(--border);}
+.tname{font-weight:600;}
+.sdot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;flex-shrink:0;}
+.sdot.alive{background:var(--green);}.sdot.elim{background:var(--red);}
+.td-r{text-align:right;font-family:'DM Mono',monospace;}
+.td-pts{text-align:right;font-family:'DM Mono',monospace;font-weight:700;font-size:14px;}
+.td-pts.has{color:var(--gold);}.td-pts.none{color:var(--muted);}
+.td-cost{text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);}
+
+/* ── GAME LOG ── */
+.game-log{display:flex;flex-direction:column;gap:7px;}
+.gcard{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.grnd{font-size:10px;font-family:'DM Mono',monospace;background:var(--surface);border-radius:3px;padding:2px 6px;color:var(--text-dim);white-space:nowrap;min-width:36px;text-align:center;}
+.gteams{flex:1;min-width:180px;}
+.gwinner{font-weight:700;font-size:13px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.gloser{font-size:11px;color:var(--text-dim);margin-top:2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.gscore-txt{font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--text-dim);white-space:nowrap;}
+.gpts{display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;}
+.chip{font-size:10px;padding:2px 6px;border-radius:3px;font-family:'DM Mono',monospace;white-space:nowrap;}
+.chip.r{background:rgba(96,165,250,.1);color:var(--blue);border:1px solid rgba(96,165,250,.2);}
+.chip.m{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.chip.u{background:rgba(251,191,36,.1);color:var(--gold);border:1px solid rgba(251,191,36,.2);}
+.chip.tot{font-weight:700;background:rgba(249,115,22,.1);color:var(--orange);border:1px solid rgba(249,115,22,.2);}
+.chip.ff{background:var(--surface);color:var(--muted);border:1px solid var(--border);}
+.own{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600;}
+.own.Porter{background:rgba(249,115,22,.12);color:var(--orange);}
+.own.Chris{background:rgba(96,165,250,.12);color:var(--blue);}
+.own.Mush{background:rgba(34,197,94,.12);color:var(--green);}
+.own.Jandy{background:rgba(167,139,250,.12);color:var(--purple);}
+.own.Slade{background:rgba(244,114,182,.12);color:var(--pink);}
+.own.Corr{background:rgba(34,211,238,.12);color:var(--cyan);}
+.own.none{background:var(--surface);color:var(--muted);}
+.slabel{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:14px 0 7px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* seed colors */
+.s1{color:var(--gold);}.s2{color:#c0c0c0;}.s3{color:#cd7f32;}
+.s4,.s5{color:var(--blue);}.s6,.s7,.s8{color:var(--text-dim);}
+.s9,.s10,.s11{color:var(--green);}.s12,.s13,.s14,.s15,.s16{color:var(--red);}
+
+/* ── ANALYSIS ── */
+.analysis-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin-bottom:24px;}
+.acard{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px;}
+.acard-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:700;margin-bottom:12px;}
+.arow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.arow:last-child{border-bottom:none;}
+.arow-rank{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted);min-width:20px;}
+.arow-name{flex:1;font-size:13px;font-weight:600;}
+.arow-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.arow-val{font-family:'DM Mono',monospace;font-size:13px;font-weight:700;text-align:right;white-space:nowrap;}
+.arow-val.gold{color:var(--gold);}.arow-val.green{color:var(--green);}
+.arow-val.red{color:var(--red);}.arow-val.blue{color:var(--blue);}
+.arow-val.orange{color:var(--orange);}
+.stat-bar-wrap{flex:1;}
+.stat-bar{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:3px;}
+.stat-bar-fill{height:100%;border-radius:3px;}
+.highlight-card{border-color:rgba(251,191,36,.3);background:linear-gradient(135deg,rgba(251,191,36,.04),var(--card));}
+.highlight-card .acard-title{color:var(--gold);}
+.stat-pill{font-size:10px;padding:2px 7px;border-radius:10px;font-family:'DM Mono',monospace;font-weight:600;white-space:nowrap;}
+.stat-pill.good{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25);}
+.stat-pill.bad{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);}
+.stat-pill.neu{background:var(--surface);color:var(--muted);border:1px solid var(--border);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🏀 MM Auction</div>
+  <div class="header-right">
+    <div class="badge" style="background:rgba(255,203,5,.15);border-color:rgba(255,203,5,.5);color:#FFCB05;font-size:13px;">🏆 Michigan National Champions 2026</div>
+  </div>
+</header>
+
+<canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999"></canvas>
+<script>
+// Michigan confetti — maize & blue
+(function(){
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  window.addEventListener('resize', ()=>{ canvas.width=window.innerWidth; canvas.height=window.innerHeight; });
+
+  const COLORS = ['#FFCB05','#00274C','#FFCB05','#FFCB05','#ffffff','#00274C'];
+  const pieces = [];
+  for(let i=0;i<220;i++){
+    pieces.push({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height - canvas.height,
+      w: 8+Math.random()*8,
+      h: 4+Math.random()*5,
+      color: COLORS[Math.floor(Math.random()*COLORS.length)],
+      vx: (Math.random()-0.5)*2.5,
+      vy: 2+Math.random()*4,
+      angle: Math.random()*360,
+      va: (Math.random()-0.5)*6,
+      opacity: 0.85+Math.random()*0.15,
+    });
+  }
+
+  let frame=0;
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    pieces.forEach(p=>{
+      ctx.save();
+      ctx.globalAlpha = p.opacity;
+      ctx.translate(p.x+p.w/2, p.y+p.h/2);
+      ctx.rotate(p.angle*Math.PI/180);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+      p.x += p.vx;
+      p.y += p.vy;
+      p.angle += p.va;
+      if(p.y > canvas.height+20){
+        p.y = -20;
+        p.x = Math.random()*canvas.width;
+      }
+    });
+    frame++;
+    // Fade out after 5 seconds
+    if(frame < 300) requestAnimationFrame(draw);
+    else {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      canvas.style.display='none';
+    }
+  }
+  draw();
+})();
+</script>
+
+<div class="tabs">
+  <div class="tab active" onclick="show('standings',this)">Standings</div>
+  <div class="tab" onclick="show('rosters',this)">Rosters</div>
+  <div class="tab" onclick="show('analysis',this)">Analysis</div>
+  <div class="tab" onclick="show('gamelog',this)">Game Log</div>
+</div>
+
+<div id="page-standings" class="page active">
+  <div class="sec-title">Current Standings</div>
+  <div class="standings-grid" id="standings-grid"></div>
+</div>
+
+<div id="page-rosters" class="page">
+  <div class="sec-title">Rosters &amp; Points</div>
+  <div class="roster-grid" id="roster-grid"></div>
+</div>
+
+<div id="page-analysis" class="page">
+  <div class="sec-title">Analysis</div>
+  <div id="analysis-container"></div>
+</div>
+
+<div id="page-gamelog" class="page">
+  <div class="sec-title">Game Log</div>
+  <div id="game-log-container"></div>
+</div>
+
+<script>
+// ── SCORING RULES ─────────────────────────────────────────────────────────────
+// Round wins:  R64=1, R32=2, S16=3, E8=4, F4=5, CHAMP=10
+// Margin wins: 30+pts=3, 20-29pts=2, 10-19pts=1
+// Underdog:    higher seed number wins = +2
+// Budget: $250 per player
+
+const ROUND_PTS = {'R64':1,'R32':2,'S16':3,'E8':4,'F4':5,'CHAMP':10};
+
+const SEEDS = {
+  'Duke':1,'Arizona':1,'Michigan':1,'Florida':1,
+  'Iowa State':2,'Purdue':2,'UConn':2,'Houston':2,
+  'Michigan St.':3,'Illinois':3,'Virginia':3,'Gonzaga':3,
+  'Kansas':4,'Nebraska':4,'Arkansas':4,'Alabama':4,
+  'Vanderbilt':5,'Texas Tech':5,"St John's":5,'Wisconsin':5,
+  'North Carolina':6,'Louisville':6,'BYU':6,'Tennessee':6,
+  'Miami (FL)':7,'UCLA':7,"Saint Mary's":7,'Kentucky':7,
+  'Clemson':8,'Ohio St.':8,'Georgia':8,'Villanova':8,
+  'Saint Louis':9,'TCU':9,'Iowa':9,'Utah State':9,
+  'Santa Clara':10,'UCF':10,'Texas A&M':10,'Missouri':10,
+  'South Florida':11,'Miami (OH)':11,'Texas':11,'VCU':11,
+  'High Point':12,'Akron':12,'Northern Iowa':12,'McNeese':12,
+  'CA Baptist':13,'Hofstra':13,"Hawai'i":13,'Troy':13,
+  'Kennesaw St.':14,'N Dakota St.':14,'Penn':14,'Wright St.':14,
+  'Furman':15,'Idaho':15,'Tennessee St.':15,'Queens':15,
+  'Howard':16,'Long Island':16,'Siena':16,'Lehigh/Prairie View':16,
+};
+
+const OWNER = {
+  'Arizona':'Porter','Purdue':'Porter','Kentucky':'Porter',
+  'Duke':'Chris','Kansas':'Chris','Vanderbilt':'Chris','UCF':'Chris',
+  'Akron':'Chris','Northern Iowa':'Chris','CA Baptist':'Chris',
+  'Hofstra':'Chris','Kennesaw St.':'Chris','Penn':'Chris',
+  'Florida':'Mush',"St John's":'Mush','BYU':'Mush','Tennessee':'Mush',
+  'TCU':'Mush','Utah State':'Mush','Miami (OH)':'Mush','McNeese':'Mush','Troy':'Mush',
+  'Michigan':'Jandy','Michigan St.':'Jandy','Virginia':'Jandy','Arkansas':'Jandy',
+  'Louisville':'Jandy','North Carolina':'Jandy','Santa Clara':'Jandy','Texas':'Jandy',
+  'VCU':'Jandy','High Point':'Jandy',"Hawai'i":'Jandy',
+  'Houston':'Slade','Iowa State':'Slade','Alabama':'Slade','Nebraska':'Slade',
+  'Miami (FL)':'Slade','Iowa':'Slade',
+  'UConn':'Corr','Gonzaga':'Corr','Illinois':'Corr','Texas Tech':'Corr','Wisconsin':'Corr',
+  "Saint Mary's":'Corr','UCLA':'Corr','Clemson':'Corr','Georgia':'Corr','Ohio St.':'Corr',
+  'Villanova':'Corr','Saint Louis':'Corr','Missouri':'Corr','Texas A&M':'Corr',
+  'South Florida':'Corr','N Dakota St.':'Corr','Wright St.':'Corr','Furman':'Corr',
+  'Idaho':'Corr','Queens':'Corr','Tennessee St.':'Corr','Lehigh/Prairie View':'Corr',
+  'Long Island':'Corr','Siena':'Corr',
+};
+
+const COSTS = {
+  'Arizona':175,'Purdue':68,'Kentucky':7,
+  'Duke':151,'Kansas':43,'Vanderbilt':22,'UCF':16,'Akron':4,'Northern Iowa':3,
+  'CA Baptist':2,'Hofstra':4,'Kennesaw St.':3,'Penn':2,
+  'Florida':100,"St John's":30,'BYU':53,'Tennessee':19,'TCU':15,'Utah State':11,
+  'Miami (OH)':7,'McNeese':9,'Troy':6,
+  'Michigan':100,'Michigan St.':30,'Virginia':25,'Arkansas':40,'Louisville':7,
+  'North Carolina':20,'Santa Clara':10,'Texas':5,'VCU':7,'High Point':5,"Hawai'i":1,
+  'Houston':134,'Iowa State':76,'Alabama':12,'Nebraska':15,'Miami (FL)':9,'Iowa':4,
+  'UConn':72,'Gonzaga':41,'Illinois':35,'Texas Tech':19,'Wisconsin':25,
+  "Saint Mary's":5,'UCLA':8,'Clemson':5,'Georgia':6,'Ohio St.':5,'Villanova':5,
+  'Saint Louis':6,'Missouri':2,'Texas A&M':3,'South Florida':2,'N Dakota St.':1,
+  'Wright St.':1,'Furman':1,'Idaho':1,'Queens':3,'Tennessee St.':1,
+  'Lehigh/Prairie View':1,'Long Island':1,'Siena':1,
+};
+
+// ── HELPER FUNCTIONS ──────────────────────────────────────────────────────────
+function marginPts(diff){ return diff>=30?3:diff>=20?2:diff>=10?1:0; }
+function underdogPts(w,l){ return (SEEDS[w]||8)>(SEEDS[l]||8)?2:0; }
+function sc(s){ return s<=3?`s${s}`:s<=5?'s4':s<=8?'s6':s<=11?'s9':'s12'; }
+
+function calcGamePts(g) {
+  if(g.round==='FF') return 0;
+  const rp = ROUND_PTS[g.round] || 1;
+  const mp = marginPts(g.ws - g.ls);
+  const up = underdogPts(g.winner, g.loser);
+  return rp + mp + up;
+}
+
+function ownerTag(team) {
+  const o = OWNER[team];
+  return o
+    ? `<span class="own ${o}">${o}</span>`
+    : `<span class="own none">—</span>`;
+}
+
+// ── GAME DATA (only closed/confirmed results) ─────────────────────────────────
+// Format: {round, winner, loser, ws, ls}
+// round: 'FF' = First Four (0 pts), 'R64','R32','S16','E8','F4','CHAMP'
+const GAMES = [
+  // First Four — no points, just determines who plays R64
+  {round:'FF', winner:'Prairie View A&M', loser:'Lehigh',      ws:67, ls:55},
+  {round:'FF', winner:'Miami (OH)',        loser:'SMU',         ws:89, ls:79},
+
+  // Round of 64 — Thursday March 19
+  {round:'R64', winner:'TCU',          loser:'Ohio St.',       ws:66, ls:64},
+  {round:'R64', winner:'Nebraska',      loser:'Troy',           ws:76, ls:47},
+  {round:'R64', winner:'Louisville',    loser:'South Florida',  ws:83, ls:79},
+  {round:'R64', winner:'High Point',    loser:'Wisconsin',      ws:83, ls:82},
+  {round:'R64', winner:'Duke',          loser:'Siena',          ws:71, ls:65},
+  {round:'R64', winner:'Vanderbilt',    loser:'McNeese',        ws:78, ls:68},
+  {round:'R64', winner:'Arkansas',      loser:"Hawai'i",        ws:97, ls:78},
+  {round:'R64', winner:'Michigan St.',  loser:'N Dakota St.',   ws:92, ls:67},
+  {round:'R64', winner:'VCU',           loser:'North Carolina', ws:82, ls:78},
+  {round:'R64', winner:'Michigan',      loser:'Howard',         ws:101,ls:80},  // margin 21 → +2
+  {round:'R64', winner:'Texas A&M',     loser:"Saint Mary's",   ws:63, ls:50},
+  {round:'R64', winner:'Texas',         loser:'BYU',            ws:79, ls:71},  // #11 upsets #6 → +2 underdog
+  {round:'R64', winner:'Gonzaga',       loser:'Kennesaw St.',   ws:73,  ls:64},  // +1 +0 +0 = 1 → Corr
+  {round:'R64', winner:'Illinois',      loser:'Penn',           ws:105, ls:70},  // +1 +3 +0 = 4 → Corr
+  {round:'R64', winner:'Saint Louis',   loser:'Georgia',        ws:102, ls:77},  // +1 +2 +2 = 5 → Corr (#9 upsets #8)
+  {round:'R64', winner:'Houston',       loser:'Idaho',          ws:78,  ls:47},  // +1 +3 +0 = 4 → Slade
+
+  // Round of 64 — Friday March 20
+  {round:'R64', winner:'Kentucky',      loser:'Santa Clara',    ws:89,  ls:84},  // +1 +0 +0 = 1 → Porter
+  {round:'R64', winner:'Texas Tech',    loser:'Akron',          ws:91,  ls:71},  // +1 +2 +0 = 3 → Corr
+  {round:'R64', winner:'Arizona',       loser:'Long Island',    ws:92,  ls:58},  // +1 +3 +0 = 4 → Porter
+  {round:'R64', winner:'Virginia',      loser:'Wright St.',     ws:82,  ls:73},  // +1 +0 +0 = 1 → Jandy
+  {round:'R64', winner:'Iowa State',    loser:'Tennessee St.',  ws:108, ls:74},  // +1 +3 +0 = 4 → Slade
+  {round:'R64', winner:'Alabama',       loser:'Hofstra',        ws:90,  ls:70},  // +1 +2 +0 = 3 → Slade
+  {round:'R64', winner:'Tennessee',     loser:'Miami (OH)',     ws:78,  ls:56},  // +1 +2 +0 = 3 → Mush
+
+  // Round of 64 — Friday March 20 (night)
+  {round:'R64', winner:'Utah State',    loser:'Villanova',      ws:86,  ls:76},  // +1 +1 +2 = 4 → Mush (#9 upsets #8)
+  {round:'R64', winner:'Iowa',          loser:'Clemson',        ws:67,  ls:61},  // +1 +0 +2 = 3 → Slade (#9 upsets #8)
+  {round:'R64', winner:"St John's",     loser:'Northern Iowa',  ws:79,  ls:53},  // +1 +2 +0 = 3 → Mush
+  {round:'R64', winner:'UCLA',          loser:'UCF',            ws:75,  ls:71},  // +1 +0 +0 = 1 → Corr
+  {round:'R64', winner:'Purdue',        loser:'Queens',         ws:104, ls:71},  // +1 +3 +0 = 4 → Porter
+  {round:'R64', winner:'Florida',       loser:'Lehigh/Prairie View', ws:114, ls:55},  // +1 +3 +0 = 4 → Mush
+  {round:'R64', winner:'Miami (FL)',    loser:'Missouri',       ws:80,  ls:66},  // +1 +1 +0 = 2 → Slade
+  {round:'R64', winner:'Kansas',        loser:'CA Baptist',     ws:68,  ls:60},  // +1 +0 +0 = 1 → Chris
+  {round:'R64', winner:'UConn',         loser:'Furman',         ws:82,  ls:71},  // +1 +1 +0 = 2 → Corr
+
+  // Round of 32 — Saturday March 21
+  {round:'R32', winner:'Michigan',      loser:'Saint Louis',    ws:95,  ls:72},  // +2 +2 +0 = 4 → Jandy
+
+  // Round of 32 — Saturday March 21
+  {round:'R32', winner:'Michigan St.',  loser:'Louisville',     ws:77,  ls:69},  // +2 +0 +0 = 2 → Jandy
+  {round:'R32', winner:'Duke',          loser:'TCU',            ws:81,  ls:58},  // +2 +2 +0 = 4 → Chris
+  {round:'R32', winner:'Houston',       loser:'Texas A&M',      ws:88,  ls:57},  // +2 +3 +0 = 5 → Slade
+  {round:'R32', winner:'Illinois',      loser:'VCU',            ws:76,  ls:55},  // +2 +2 +0 = 4 → Corr
+  {round:'R32', winner:'Nebraska',      loser:'Vanderbilt',     ws:74,  ls:72},  // +2 +0 +0 = 2 → Slade
+  {round:'R32', winner:'Arkansas',      loser:'High Point',     ws:94,  ls:88},  // +2 +0 +0 = 2 → Jandy
+  {round:'R32', winner:'Texas',         loser:'Gonzaga',        ws:74,  ls:68},  // +2 +0 +2 = 4 → Jandy (#11 upsets #3)
+
+  // Round of 32 — Sunday March 22
+  {round:'R32', winner:'Purdue',        loser:'Miami (FL)',     ws:79,  ls:69},  // +2 +1 +0 = 3 → Porter
+  {round:'R32', winner:'Iowa State',    loser:'Kentucky',       ws:82,  ls:63},  // +2 +1 +0 = 3 → Slade
+  {round:'R32', winner:"St John's",     loser:'Kansas',         ws:67,  ls:65},  // +2 +0 +2 = 4 → Mush (#5 upsets #4)
+  {round:'R32', winner:'Tennessee',     loser:'Virginia',       ws:79,  ls:72},  // +2 +0 +2 = 4 → Mush (#6 upsets #3)
+  {round:'R32', winner:'Iowa',          loser:'Florida',        ws:73,  ls:72},  // +2 +0 +2 = 4 → Slade (#9 upsets #1!)
+  {round:'R32', winner:'Arizona',       loser:'Utah State',     ws:78,  ls:66},  // +2 +1 +0 = 3 → Porter
+  {round:'R32', winner:'UConn',         loser:'UCLA',           ws:73,  ls:57},  // +2 +1 +0 = 3 → Corr
+  {round:'R32', winner:'Alabama',       loser:'Texas Tech',     ws:90,  ls:65},  // +2 +2 +0 = 4 → Slade
+
+  // Sweet 16 — Thursday March 26
+  {round:'S16', winner:'Purdue',        loser:'Texas',          ws:79,  ls:77},  // +3 +0 +0 = 3 → Porter
+  {round:'S16', winner:'Iowa',          loser:'Nebraska',       ws:77,  ls:71},  // +3 +0 +2 = 5 → Slade (#9 upsets #4)
+  {round:'S16', winner:'Illinois',      loser:'Houston',        ws:65,  ls:55},  // +3 +1 +2 = 6 → Corr (#3 upsets #2)
+  {round:'S16', winner:'Arizona',       loser:'Arkansas',       ws:109, ls:88},  // +3 +2 +0 = 5 → Porter
+
+  // Sweet 16 — Friday March 27
+  {round:'S16', winner:'Duke',          loser:"St John's",      ws:80,  ls:75},  // +3 +0 +0 = 3 → Chris
+  {round:'S16', winner:'Michigan',      loser:'Alabama',        ws:90,  ls:77},  // +3 +1 +0 = 4 → Jandy
+  {round:'S16', winner:'UConn',         loser:'Michigan St.',   ws:67,  ls:63},  // +3 +0 +0 = 3 → Corr
+  {round:'S16', winner:'Tennessee',     loser:'Iowa State',     ws:76,  ls:62},  // +3 +1 +2 = 6 → Mush (#6 upsets #2)
+
+  // Elite 8 — Saturday March 28 / Sunday March 29
+  {round:'E8',  winner:'Illinois',      loser:'Iowa',           ws:71,  ls:59},  // +4 +1 +0 = 5 → Corr
+  {round:'E8',  winner:'Arizona',       loser:'Purdue',         ws:79,  ls:64},  // +4 +1 +0 = 5 → Porter
+  {round:'E8',  winner:'Michigan',      loser:'Tennessee',      ws:95,  ls:62},  // +4 +3 +0 = 7 → Jandy
+  {round:'E8',  winner:'UConn',         loser:'Duke',           ws:73,  ls:72},  // +4 +0 +2 = 6 → Corr (#2 upsets #1)
+
+  // Final Four — Saturday April 4
+  {round:'F4',  winner:'UConn',         loser:'Illinois',       ws:71,  ls:62},  // +5 +0 +0 = 5 → Corr
+  {round:'F4',  winner:'Michigan',      loser:'Arizona',        ws:91,  ls:73},  // +5 +1 +0 = 6 → Jandy
+
+  // Championship — Monday April 6
+  {round:'CHAMP', winner:'Michigan',    loser:'UConn',          ws:69,  ls:63},  // +10 +0 +0 = 10 → Jandy 🏆
+];
+
+// ── COMPUTE STATE FROM GAMES ──────────────────────────────────────────────────
+function computeState() {
+  const scores   = {Porter:0,Chris:0,Mush:0,Jandy:0,Slade:0,Corr:0};
+  const teamPts  = {};   // pts scored BY each winning team
+  const eliminated = new Set();
+  const winners    = new Set();
+
+  GAMES.forEach(g => {
+    const pts = calcGamePts(g);
+    const wo  = OWNER[g.winner];
+    if(g.round !== 'FF') {
+      if(wo) scores[wo] += pts;
+      teamPts[g.winner] = (teamPts[g.winner]||0) + pts;
+      eliminated.add(g.loser);
+      winners.add(g.winner);
+    }
+  });
+
+  return {scores, teamPts, eliminated};
+}
+
+// ── RENDER STANDINGS ──────────────────────────────────────────────────────────
+function renderStandings(scores, eliminated) {
+  const players = ['Porter','Chris','Mush','Jandy','Slade','Corr'];
+  const ranked  = [...players].sort((a,b)=>scores[b]-scores[a]);
+  const maxScore= Math.max(...Object.values(scores), 1);
+  const grid    = document.getElementById('standings-grid');
+  grid.innerHTML = '';
+
+  ranked.forEach((p,i) => {
+    const total   = Object.entries(OWNER).filter(([,o])=>o===p).length;
+    const aliveN  = total - [...eliminated].filter(t=>OWNER[t]===p).length;
+    const d = document.createElement('div');
+    d.className = `scard ${p}${i===0?' rank1':''}`;
+    d.innerHTML = `
+      <div class="scard-top">
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;margin-bottom:1px">#${i+1}</div>
+          <div class="scard-name">${p}${i===0?' 👑':''}</div>
+        </div>
+        <div class="scard-score">${scores[p]}</div>
+      </div>
+      <div class="scard-meta">
+        <span class="alive-c">${aliveN} alive</span> &nbsp;/&nbsp; <span class="dead-c">${total-aliveN} out</span>
+        &nbsp;·&nbsp; ${total} teams
+      </div>
+      <div class="${p}">
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${Math.round(scores[p]/maxScore*100)}%"></div>
+        </div>
+      </div>`;
+    grid.appendChild(d);
+  });
+}
+
+// ── RENDER ROSTERS ────────────────────────────────────────────────────────────
+function renderRosters(scores, teamPts, eliminated) {
+  const players = ['Porter','Chris','Mush','Jandy','Slade','Corr'];
+  const grid = document.getElementById('roster-grid');
+  grid.innerHTML = '';
+
+  players.forEach(p => {
+    const teams = Object.entries(OWNER)
+      .filter(([,o])=>o===p)
+      .map(([t])=>t)
+      .sort((a,b)=>(SEEDS[a]||99)-(SEEDS[b]||99));
+
+    const totalPts  = teams.reduce((s,t)=>s+(teamPts[t]||0),0);
+    const totalCost = teams.reduce((s,t)=>s+(COSTS[t]||0),0);
+    const aliveN    = teams.filter(t=>!eliminated.has(t)).length;
+
+    const block = document.createElement('div');
+    block.className = 'roster-block';
+
+    const rows = teams.map(t => {
+      const pts  = teamPts[t] || 0;
+      const elim = eliminated.has(t);
+      const seed = SEEDS[t] || '?';
+      return `
+        <tr class="${elim?'elim':''}">
+          <td><span class="${sc(seed)}" style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600">#${seed}</span></td>
+          <td style="display:flex;align-items:center">
+            <span class="sdot ${elim?'elim':'alive'}"></span>
+            <span class="tname">${t}</span>
+          </td>
+          <td class="td-cost">$${COSTS[t]||'—'}</td>
+          <td class="td-pts ${pts>0?'has':'none'}">${pts>0?'+'+pts:'—'}</td>
+        </tr>`;
+    }).join('');
+
+    block.innerHTML = `
+      <div class="rh ${p}">
+        <div class="rh-name">${p}</div>
+        <div class="rh-stats">
+          <div class="rhstat"><div class="lbl">Points</div><div class="val gold">${totalPts}</div></div>
+          <div class="rhstat"><div class="lbl">Spent</div><div class="val">$${totalCost}</div></div>
+          <div class="rhstat"><div class="lbl">Alive</div><div class="val">${aliveN}/${teams.length}</div></div>
+        </div>
+      </div>
+      <table class="rtable">
+        <thead>
+          <tr>
+            <th>Seed</th><th>Team</th>
+            <th class="r">Paid</th><th class="r">Pts</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="color:var(--muted);font-size:11px;font-weight:400">Total</td>
+            <td class="td-cost" style="font-weight:700;color:var(--text)">$${totalCost}</td>
+            <td class="td-pts has" style="font-size:15px">${totalPts>0?'+'+totalPts:'0'}</td>
+          </tr>
+        </tfoot>
+      </table>`;
+    grid.appendChild(block);
+  });
+}
+
+// ── RENDER GAME LOG ───────────────────────────────────────────────────────────
+function renderGameLog() {
+  const container = document.getElementById('game-log-container');
+  container.innerHTML = '';
+
+  const byRound = {
+    'CHAMP': GAMES.filter(g=>g.round==='CHAMP'),
+    'F4':   GAMES.filter(g=>g.round==='F4'),
+    'E8':   GAMES.filter(g=>g.round==='E8'),
+    'S16':  GAMES.filter(g=>g.round==='S16'),
+    'R32':  GAMES.filter(g=>g.round==='R32'),
+    'R64':  GAMES.filter(g=>g.round==='R64'),
+    'FF':   GAMES.filter(g=>g.round==='FF'),
+  };
+  const labels = {
+    'CHAMP':'🏆 National Championship', 'F4':'Final Four', 'E8':'Elite 8',
+    'S16':'Sweet 16', 'R32':'Round of 32', 'R64':'Round of 64', 'FF':'First Four'
+  };
+
+  function section(round) {
+    const games = byRound[round];
+    if(!games.length) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'slabel';
+    lbl.textContent = labels[round];
+    container.appendChild(lbl);
+    const wrap = document.createElement('div');
+    wrap.className = 'game-log';
+    games.forEach(g => {
+      const wseed = SEEDS[g.winner]||'?', lseed = SEEDS[g.loser]||'?';
+      const wo = OWNER[g.winner]||null, lo = OWNER[g.loser]||null;
+      const pts  = calcGamePts(g);
+      const rp   = ROUND_PTS[g.round]||0;
+      const mp   = g.round==='FF'?0:marginPts(g.ws-g.ls);
+      const up   = g.round==='FF'?0:underdogPts(g.winner,g.loser);
+
+      let ptsHtml = '';
+      if(g.round==='FF'){
+        ptsHtml = `<span class="chip ff">Play-in · 0 pts</span>`;
+      } else {
+        ptsHtml  = `<span class="chip r">+${rp} ${g.round}</span>`;
+        if(mp) ptsHtml += `<span class="chip m">+${mp} margin (${g.ws-g.ls})</span>`;
+        if(up) ptsHtml += `<span class="chip u">+${up} upset</span>`;
+        ptsHtml += `<span class="chip tot">${pts} pts → ${wo||'—'}</span>`;
+      }
+
+      const c = document.createElement('div');
+      c.className = 'gcard';
+      c.innerHTML = `
+        <div class="grnd">${g.round}</div>
+        <div class="gteams">
+          <div class="gwinner">
+            <span class="${sc(wseed)}" style="font-family:'DM Mono',monospace;font-size:10px">#${wseed}</span>
+            ${g.winner} ${ownerTag(g.winner)}
+          </div>
+          <div class="gloser">
+            def.&nbsp;
+            <span class="${sc(lseed)}" style="font-size:10px">#${lseed}</span>
+            ${g.loser} ${ownerTag(g.loser)}
+            <span style="font-family:'DM Mono',monospace;font-size:11px">${g.ws}–${g.ls}</span>
+          </div>
+        </div>
+        <div class="gpts">${ptsHtml}</div>`;
+      wrap.appendChild(c);
+    });
+    container.appendChild(wrap);
+  }
+
+  section('CHAMP');
+  section('F4');
+  section('E8');
+  section('S16');
+  section('R32');
+  section('R64');
+  section('FF');
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────────────────────
+function show(name,tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  tab.classList.add('active');
+}
+
+// ── ANALYSIS ─────────────────────────────────────────────────────────────────
+function renderAnalysis() {
+  const container = document.getElementById('analysis-container');
+  container.innerHTML = '';
+
+  // Compute per-team pts from game log
+  const teamPts = {};
+  GAMES.forEach(g => {
+    if(g.round==='FF') return;
+    const pts = calcGamePts(g);
+    teamPts[g.winner] = (teamPts[g.winner]||0) + pts;
+  });
+
+  const players = ['Porter','Chris','Mush','Jandy','Slade','Corr'];
+  const pColors = {Porter:'var(--orange)',Chris:'var(--blue)',Mush:'var(--green)',Jandy:'var(--purple)',Slade:'var(--pink)',Corr:'var(--cyan)'};
+
+  // All teams with data
+  const allTeams = Object.keys(OWNER).map(t => ({
+    team: t,
+    owner: OWNER[t],
+    cost: COSTS[t]||0,
+    pts: teamPts[t]||0,
+    seed: SEEDS[t]||16,
+  }));
+
+  const grid = document.createElement('div');
+  grid.className = 'analysis-grid';
+
+  // ── Best Value (pts per dollar) ──
+  const byValue = allTeams.filter(t=>t.pts>0&&t.cost>0).sort((a,b)=>(b.pts/b.cost)-(a.pts/a.cost));
+  const maxRoi = byValue[0] ? byValue[0].pts/byValue[0].cost : 1;
+  let html = `<div class="acard"><div class="acard-title">🏆 Best Value (pts per $)</div>`;
+  byValue.slice(0,6).forEach((t,i)=>{
+    const roi=(t.pts/t.cost).toFixed(2);
+    const pct=Math.round((t.pts/t.cost)/maxRoi*100);
+    html+=`<div class="arow">
+      <div class="arow-rank">${i+1}</div>
+      <div class="stat-bar-wrap">
+        <div class="arow-name">${t.team} <span class="own ${t.owner}" style="font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600">${t.owner}</span></div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${pColors[t.owner]}"></div></div>
+      </div>
+      <div style="text-align:right">
+        <div class="arow-val green">${roi}x</div>
+        <div style="font-size:10px;color:var(--muted)">${t.pts}pts / $${t.cost}</div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+  grid.innerHTML += html;
+
+  // ── Biggest Busts (cost - pts, high spenders underperforming) ──
+  const busts = allTeams.filter(t=>t.cost>=10).sort((a,b)=>(b.cost-b.pts)-(a.cost-a.pts));
+  let html2 = `<div class="acard"><div class="acard-title">💸 Biggest Busts ($ spent vs pts earned)</div>`;
+  busts.slice(0,6).forEach((t,i)=>{
+    const waste = t.cost - t.pts;
+    html2+=`<div class="arow">
+      <div class="arow-rank">${i+1}</div>
+      <div>
+        <div class="arow-name">${t.team} <span class="own ${t.owner}" style="font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600">${t.owner}</span></div>
+        <div class="arow-sub">$${t.cost} paid · ${t.pts} pts earned</div>
+      </div>
+      <div class="arow-val red">-$${waste}</div>
+    </div>`;
+  });
+  html2+=`</div>`;
+  grid.innerHTML += html2;
+
+  // ── Highest Scoring Teams ──
+  const topTeams = [...allTeams].filter(t=>t.pts>0).sort((a,b)=>b.pts-a.pts);
+  const maxPts = topTeams[0]?.pts||1;
+  let html3 = `<div class="acard"><div class="acard-title">🔥 Highest Scoring Teams</div>`;
+  topTeams.slice(0,8).forEach((t,i)=>{
+    const pct=Math.round(t.pts/maxPts*100);
+    html3+=`<div class="arow">
+      <div class="arow-rank">${i+1}</div>
+      <div class="stat-bar-wrap">
+        <div class="arow-name">${t.team} <span style="font-size:10px;color:var(--muted)">#${t.seed}</span></div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${pColors[t.owner]}"></div></div>
+      </div>
+      <div style="text-align:right">
+        <div class="arow-val gold">${t.pts}pts</div>
+        <div style="font-size:10px;color:var(--muted)">${t.owner}</div>
+      </div>
+    </div>`;
+  });
+  html3+=`</div>`;
+  grid.innerHTML += html3;
+
+  // ── Steal of the Draft ──
+  const steals = allTeams.filter(t=>t.pts>0&&t.cost>0).map(t=>({...t,surplus:t.pts-t.cost})).sort((a,b)=>b.surplus-a.surplus);
+  let html4 = `<div class="acard highlight-card"><div class="acard-title">⭐ Steal of the Draft (pts − $ paid)</div>`;
+  steals.slice(0,6).forEach((t,i)=>{
+    html4+=`<div class="arow">
+      <div class="arow-rank">${i+1}</div>
+      <div>
+        <div class="arow-name">${t.team} <span class="own ${t.owner}" style="font-size:10px;padding:1px 5px;border-radius:3px;font-weight:600">${t.owner}</span></div>
+        <div class="arow-sub">$${t.cost} paid</div>
+      </div>
+      <div class="arow-val ${t.surplus>=0?'green':'red'}">${t.surplus>=0?'+':''}${t.surplus}</div>
+    </div>`;
+  });
+  html4+=`</div>`;
+  grid.innerHTML += html4;
+
+  // ── Teams Still Alive ──
+  const {eliminated} = computeState();
+  const alive = allTeams.filter(t=>!eliminated.has(t.team)&&OWNER[t.team]);
+  const aliveByOwner = {};
+  alive.forEach(t=>{ aliveByOwner[t.owner]=(aliveByOwner[t.owner]||0)+1; });
+  const totalByOwner = {};
+  allTeams.forEach(t=>{ if(OWNER[t.team]) totalByOwner[t.owner]=(totalByOwner[t.owner]||0)+1; });
+
+  let html5 = `<div class="acard"><div class="acard-title">✅ Teams Still Alive</div>`;
+  players.sort((a,b)=>(aliveByOwner[b]||0)-(aliveByOwner[a]||0)).forEach(p=>{
+    const a=aliveByOwner[p]||0; const tot=totalByOwner[p]||0;
+    const pct=Math.round(a/tot*100);
+    const aliveTeams=alive.filter(t=>t.owner===p).map(t=>`${t.team}(#${t.seed})`).join(', ');
+    html5+=`<div class="arow">
+      <div style="min-width:60px"><span class="own ${p}" style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700">${p}</span></div>
+      <div class="stat-bar-wrap">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:2px">${aliveTeams||'None remaining'}</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${pColors[p]}"></div></div>
+      </div>
+      <div class="arow-val" style="color:${a>0?'var(--green)':'var(--red)'}">${a}/${tot}</div>
+    </div>`;
+  });
+  html5+=`</div>`;
+  grid.innerHTML += html5;
+
+  // ── Points per $10 spent by player ──
+  const {scores} = computeState();
+  const playerCosts = {};
+  players.forEach(p=>{ playerCosts[p]=allTeams.filter(t=>t.owner===p).reduce((s,t)=>s+t.cost,0); });
+  const efficiency = players.map(p=>({p, pts:scores[p], cost:playerCosts[p], eff:+(scores[p]/playerCosts[p]*10).toFixed(2)})).sort((a,b)=>b.eff-a.eff);
+  const maxEff = efficiency[0].eff;
+  let html6 = `<div class="acard"><div class="acard-title">📊 Player Efficiency (pts per $10 spent)</div>`;
+  efficiency.forEach((e,i)=>{
+    const pct=Math.round(e.eff/maxEff*100);
+    html6+=`<div class="arow">
+      <div class="arow-rank">${i+1}</div>
+      <div class="stat-bar-wrap">
+        <div class="arow-name"><span class="own ${e.p}" style="font-size:11px;padding:2px 8px;border-radius:4px;font-weight:700">${e.p}</span> · ${e.pts}pts / $${e.cost}</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="width:${pct}%;background:${pColors[e.p]}"></div></div>
+      </div>
+      <div class="arow-val blue">${e.eff}x</div>
+    </div>`;
+  });
+  html6+=`</div>`;
+  grid.innerHTML += html6;
+
+  container.appendChild(grid);
+}
+
+function renderAll() {
+  const {scores, teamPts, eliminated} = computeState();
+  renderStandings(scores, eliminated);
+  renderRosters(scores, teamPts, eliminated);
+  renderAnalysis();
+  renderGameLog();
+}
+
+renderAll();
+</script>
+</body>
+</html>
